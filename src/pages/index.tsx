@@ -1,8 +1,21 @@
 import confetti from 'canvas-confetti'
+import { ethers } from 'ethers'
 import { NextPage } from 'next'
 import Image from 'next/image'
+import { hasNft } from '../lib/hasNft'
 
 const HomePage: NextPage = () => {
+  const handleConnect = async () => {
+    if (!window.ethereum) {
+      return
+    }
+    await window.ethereum?.request({ method: 'eth_requestAccounts' })
+    const provider = new ethers.providers.Web3Provider(window.ethereum)
+    if (await hasNft(provider.getSigner())) {
+      handleConfetti()
+    }
+  }
+
   const handleConfetti = () => {
     confetti({
       zIndex: 999,
@@ -32,7 +45,7 @@ const HomePage: NextPage = () => {
           <div className="flex justify-center">
             <button
               className="bg-blue-400 p-4 rounded-3xl text-white w-64 relative"
-              onClick={handleConfetti}
+              onClick={handleConnect}
             >
               Connect Wallet
             </button>
