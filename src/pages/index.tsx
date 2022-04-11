@@ -17,38 +17,45 @@ const HomePage: NextPage = () => {
   const [status, setStatus] = useState<'ready' | 'processing' | 'completed'>(
     'ready'
   )
+  const [hasError, setHasError] = useState<boolean>(false)
   const [tokenImageUrl, setTokenImageUrl] = useState<string>()
 
   const handleConnect = async () => {
-    setStatus('processing')
-    if (!window.ethereum) {
-      return
-    }
-    const [address]: string[] = await window.ethereum?.request({
-      method: 'eth_requestAccounts',
-    })
-    const nftContract = new NftContract(contractAddress, window.ethereum)
-    const hasNft = await nftContract.hasNft(address)
-    if (!hasNft) {
-      return
-    }
-    const [tokenId] = await nftContract.getTokenIds(address)
-    const tokenUri = await nftContract.getTokenUri(tokenId)
-    const tokenInfo = await fetch(tokenUri).then((res) => res.json())
-    setTokenImageUrl(tokenInfo.image)
-    setTimeout(() => {
+    try {
+      setStatus('processing')
+      if (!window.ethereum) {
+        throw new Error('has no wallet')
+      }
+      const [address]: string[] = await window.ethereum?.request({
+        method: 'eth_requestAccounts',
+      })
+      const nftContract = new NftContract(contractAddress, window.ethereum)
+      const hasNft = await nftContract.hasNft(address)
+      if (!hasNft) {
+        throw new Error('has no NFT')
+      }
+      const [tokenId] = await nftContract.getTokenIds(address)
+      const tokenUri = await nftContract.getTokenUri(tokenId)
+      const tokenInfo = await fetch(tokenUri).then((res) => res.json())
+      setTokenImageUrl(tokenInfo.image)
+      setTimeout(() => {
+        setStatus('completed')
+        setTimeout(
+          () =>
+            confetti({
+              zIndex: 999,
+              particleCount: 100,
+              spread: 70,
+              origin: { x: 0.5, y: 0.8 },
+            }),
+          500
+        )
+      }, 2000)
+    } catch (e) {
+      console.error(e)
+      setHasError(true)
       setStatus('completed')
-      setTimeout(
-        () =>
-          confetti({
-            zIndex: 999,
-            particleCount: 100,
-            spread: 70,
-            origin: { x: 0.5, y: 0.8 },
-          }),
-        500
-      )
-    }, 2000)
+    }
   }
 
   return (
@@ -113,18 +120,20 @@ const HomePage: NextPage = () => {
 
               <div className="p-8 bg-slate-100 flex-shrink-0 w-120">
                 <div className="flex flex-col h-full justify-center space-y-8">
-                  <div className="flex justify-center">
-                    {tokenImageUrl ? (
-                      <img
-                        src={tokenImageUrl}
-                        width={160}
-                        height={160}
-                        className="rounded-3xl"
-                        alt=""
-                      />
-                    ) : (
-                      <QuestionMarkCircleIcon className="text-slate-200 w-40" />
-                    )}
+                  <div className="text-center">
+                    <div className="inline-flex justify-center bg-white p-4 shadow-inner rounded-3xl">
+                      {tokenImageUrl ? (
+                        <img
+                          src={tokenImageUrl}
+                          width={160}
+                          height={160}
+                          className="rounded-3xl"
+                          alt=""
+                        />
+                      ) : (
+                        <QuestionMarkCircleIcon className="text-slate-200 w-40" />
+                      )}
+                    </div>
                   </div>
                   <ul className="space-y-4">
                     <li className="bg-white p-4 rounded-3xl flex items-center space-x-4 shadow-inner">
@@ -132,34 +141,45 @@ const HomePage: NextPage = () => {
                       <span className="flex-1">
                         Checking the status of the NFT.
                       </span>
-                      {tokenImageUrl ? (
-                        <CheckCircleIcon className="w-10 text-teal-400" />
-                      ) : (
-                        <SpinnerIcon className="h-10 w-10 text-sky-400" />
-                      )}
+                      {!hasError &&
+                        (tokenImageUrl ? (
+                          <CheckCircleIcon className="w-10 text-teal-400" />
+                        ) : (
+                          <SpinnerIcon className="h-10 w-10 text-sky-400" />
+                        ))}
                     </li>
                     <li className="bg-white p-4 rounded-3xl flex items-center space-x-4 shadow-inner">
                       <span className="text-2xl">📝</span>
                       <span className="flex-1">
                         Signing and its verification.
                       </span>
-                      {tokenImageUrl && status === 'completed' ? (
-                        <CheckCircleIcon className="w-10 text-teal-400" />
-                      ) : !!tokenImageUrl ? (
-                        <SpinnerIcon className="h-10 w-10 text-sky-400" />
-                      ) : null}
+                      {!hasError &&
+                        (tokenImageUrl && status === 'completed' ? (
+                          <CheckCircleIcon className="w-10 text-teal-400" />
+                        ) : !!tokenImageUrl ? (
+                          <SpinnerIcon className="h-10 w-10 text-sky-400" />
+                        ) : null)}
                     </li>
                   </ul>
                 </div>
               </div>
 
               <div className="p-8 flex-shrink-0 w-120">
-                <div className="space-y-8 flex flex-col items-center justify-center h-full">
-                  <p style={{ fontSize: '5rem' }}>🎉</p>
-                  <p className="text-5xl text-teal-500 font-bold text-center">
-                    Success!!
-                  </p>
-                </div>
+                {hasError ? (
+                  <div className="space-y-8 flex flex-col items-center justify-center h-full">
+                    <p style={{ fontSize: '5rem' }}>🥲</p>
+                    <p className="text-4xl text-rose-500 font-bold text-center">
+                      Authentication Failed...
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-8 flex flex-col items-center justify-center h-full">
+                    <p style={{ fontSize: '5rem' }}>🎉</p>
+                    <p className="text-4xl text-teal-500 font-bold text-center">
+                      Authentication Successful
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
