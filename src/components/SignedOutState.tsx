@@ -140,11 +140,11 @@ const SignedOutState: FC<Props> = () => {
                 <li className="bg-white p-4 rounded-3xl flex items-center space-x-4 shadow-inner">
                   <span className="text-2xl">📝</span>
                   <span className="flex-1">Signing and its verification.</span>
-                  {status === 'completed' ? (
+                  {tokenImageUrl && status === 'completed' ? (
                     <CheckCircleIcon className="w-10 text-teal-400" />
-                  ) : (
+                  ) : !!tokenImageUrl ? (
                     <SpinnerIcon className="h-10 w-10 text-sky-400" />
-                  )}
+                  ) : null}
                 </li>
               </ul>
             </div>
